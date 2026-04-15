@@ -237,21 +237,22 @@
         return;
       }
 
-      const globe = new Globe(globeEl)
-        .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
-        .bumpImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png')
-        .backgroundColor('rgba(0,0,0,0)')
-        .showAtmosphere(true)
-        .atmosphereColor('#79c8ff')
-        .atmosphereAltitude(0.16)
-        .pointsData(getFilteredData())
-        .pointLat('lat')
-        .pointLng('lng')
-        .pointAltitude(0.03)
-        .pointRadius(0.36)
-        .pointColor(pointColor)
-        .pointResolution(18)
-        .onPointHover(point => {
+const globe = new Globe(globeEl)
+  .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
+  .bumpImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png')
+  .backgroundColor('rgba(0,0,0,0)')
+  .showAtmosphere(true)
+  .atmosphereColor('#79c8ff')
+  .atmosphereAltitude(0.16)
+  .pointsData(getFilteredData())
+  .pointLat('lat')
+  .pointLng('lng')
+  .pointAltitude(0.03)
+  .pointRadius(0.36)
+  .pointColor(pointColor)
+  .pointResolution(18)
+  .pointLabel(() => '')
+  .onPointHover(point => {
           if (point) {
             tooltip.style.display = 'block';
             tooltip.textContent = point.name;
