@@ -231,28 +231,62 @@
         : marketplaces.filter(item => item.group === selected);
     }
 
+    function getDisplayData() {
+      const filtered = getFilteredData();
+      const counts = new Map();
+
+      return filtered.map(item => {
+        const key = `${item.lat},${item.lng}`;
+        const index = counts.get(key) || 0;
+        counts.set(key, index + 1);
+
+        if (index === 0) {
+          return item;
+        }
+
+        const angle = index * 0.9;
+        const distance = 0.9 + (index * 0.18);
+
+        return {
+          ...item,
+          lat: item.lat + Math.sin(angle) * distance,
+          lng: item.lng + Math.cos(angle) * distance
+        };
+      });
+    }
+
+    function hexToRgb(hex) {
+      const clean = hex.replace('#', '');
+      const bigint = parseInt(clean, 16);
+      return {
+        r: (bigint >> 16) & 255,
+        g: (bigint >> 8) & 255,
+        b: bigint & 255
+      };
+    }
+
     function startGlobe() {
       if (typeof Globe !== 'function') {
         showError('The globe library did not load.');
         return;
       }
 
-const globe = new Globe(globeEl)
-  .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
-  .bumpImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png')
-  .backgroundColor('rgba(0,0,0,0)')
-  .showAtmosphere(true)
-  .atmosphereColor('#79c8ff')
-  .atmosphereAltitude(0.16)
-  .pointsData(getFilteredData())
-  .pointLat('lat')
-  .pointLng('lng')
-  .pointAltitude(0.03)
-  .pointRadius(0.36)
-  .pointColor(pointColor)
-  .pointResolution(18)
-  .pointLabel(() => '')
-  .onPointHover(point => {
+      const globe = new Globe(globeEl)
+        .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
+        .bumpImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png')
+        .backgroundColor('rgba(0,0,0,0)')
+        .showAtmosphere(true)
+        .atmosphereColor('#79c8ff')
+        .atmosphereAltitude(0.16)
+        .pointsData(getDisplayData())
+        .pointLat('lat')
+        .pointLng('lng')
+        .pointAltitude(0.03)
+        .pointRadius(0.36)
+        .pointColor(pointColor)
+        .pointResolution(18)
+        .pointLabel(() => '')
+        .onPointHover(point => {
           if (point) {
             tooltip.style.display = 'block';
             tooltip.textContent = point.name;
@@ -285,7 +319,7 @@ const globe = new Globe(globeEl)
       });
 
       marketFilter.addEventListener('change', () => {
-        const filtered = getFilteredData();
+        const filtered = getDisplayData();
         globe.pointsData(filtered);
         globe.ringsData(filtered);
       });
@@ -299,7 +333,7 @@ const globe = new Globe(globeEl)
       window.addEventListener('resize', resize);
 
       globe
-        .ringsData(getFilteredData())
+        .ringsData(getDisplayData())
         .ringLat('lat')
         .ringLng('lng')
         .ringColor(d => t => {
@@ -307,19 +341,9 @@ const globe = new Globe(globeEl)
           const rgb = hexToRgb(color);
           return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${1 - t})`;
         })
-        .ringMaxRadius(3.2)
+        .ringMaxRadius(2.2)
         .ringPropagationSpeed(0.7)
-        .ringRepeatPeriod(1800);
-    }
-
-    function hexToRgb(hex) {
-      const clean = hex.replace('#', '');
-      const bigint = parseInt(clean, 16);
-      return {
-        r: (bigint >> 16) & 255,
-        g: (bigint >> 8) & 255,
-        b: bigint & 255
-      };
+        .ringRepeatPeriod(2200);
     }
 
     window.addEventListener('load', startGlobe);
