@@ -4,32 +4,63 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Marketplace Globe</title>
-
   <style>
     html, body {
       margin: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden;
       background: transparent;
       font-family: Arial, sans-serif;
     }
 
-    /* Container for layout control */
+    body {
+      overflow: hidden;
+    }
+
     #globeContainer {
       width: 100%;
       height: 100%;
       position: relative;
     }
 
-    /* Globe */
     #globeViz {
       position: fixed;
       inset: 0;
       background: transparent;
     }
 
-    /* Dropdown (desktop default = overlay) */
+    #tooltip {
+      position: fixed;
+      display: none;
+      z-index: 9999;
+      pointer-events: none;
+      background: rgba(7, 11, 20, 0.92);
+      color: white;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.3;
+      white-space: nowrap;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      transform: translate(12px, -50%);
+    }
+
+    #errorBox {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 50;
+      display: none;
+      max-width: 380px;
+      background: rgba(130, 24, 24, 0.96);
+      color: white;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.4;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    }
+
     #marketFilter {
       position: fixed;
       top: 16px;
@@ -46,25 +77,8 @@
       outline: none;
     }
 
-    /* Tooltip */
-    #tooltip {
-      position: fixed;
-      display: none;
-      z-index: 9999;
-      pointer-events: none;
-      background: rgba(7, 11, 20, 0.92);
-      color: white;
-      padding: 8px 10px;
-      border-radius: 8px;
-      font-size: 13px;
-      white-space: nowrap;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-      transform: translate(12px, -50%);
-    }
-
-    /* 🔥 MOBILE FIX */
     @media (max-width: 768px) {
-      body {
+      html, body {
         overflow: auto;
       }
 
@@ -72,6 +86,7 @@
         display: flex;
         flex-direction: column;
         height: auto;
+        min-height: 100vh;
       }
 
       #marketFilter {
@@ -80,145 +95,301 @@
         left: auto;
         margin: 16px auto 8px auto;
         width: 90%;
+        min-width: 0;
         font-size: 16px;
         padding: 12px;
       }
 
       #globeViz {
         position: relative;
+        inset: auto;
         width: 100%;
         height: 70vh;
+        min-height: 500px;
       }
     }
   </style>
 </head>
-
 <body>
+  <div id="globeContainer">
+    <select id="marketFilter">
+      <option value="all">All Marketplaces</option>
+      <option value="Alibaba">Alibaba</option>
+      <option value="Aliexpress">Aliexpress</option>
+      <option value="Allegro">Allegro</option>
+      <option value="Amazon">Amazon</option>
+      <option value="Americanas">Americanas</option>
+      <option value="Best Buy">Best Buy</option>
+      <option value="Bol">Bol</option>
+      <option value="DHGate">DHGate</option>
+      <option value="eBay">eBay</option>
+      <option value="Etsy">Etsy</option>
+      <option value="Lazada">Lazada</option>
+      <option value="Made-in-China">Made-in-China</option>
+      <option value="Mercado Libre">Mercado Libre</option>
+      <option value="NewEgg">NewEgg</option>
+      <option value="Tokopedia">Tokopedia</option>
+      <option value="Walmart">Walmart</option>
+      <option value="Wish">Wish</option>
+    </select>
 
-<div id="globeContainer">
+    <div id="globeViz"></div>
+  </div>
 
-  <select id="marketFilter">
-    <option value="all">All Marketplaces</option>
-    <option value="Alibaba">Alibaba</option>
-    <option value="Aliexpress">Aliexpress</option>
-    <option value="Allegro">Allegro</option>
-    <option value="Amazon">Amazon</option>
-    <option value="Americanas">Americanas</option>
-    <option value="Best Buy">Best Buy</option>
-    <option value="Bol">Bol</option>
-    <option value="DHGate">DHGate</option>
-    <option value="eBay">eBay</option>
-    <option value="Etsy">Etsy</option>
-    <option value="Lazada">Lazada</option>
-    <option value="Made-in-China">Made-in-China</option>
-    <option value="Mercado Libre">Mercado Libre</option>
-    <option value="NewEgg">NewEgg</option>
-    <option value="Tokopedia">Tokopedia</option>
-    <option value="Walmart">Walmart</option>
-    <option value="Wish">Wish</option>
-  </select>
+  <div id="tooltip"></div>
+  <div id="errorBox"></div>
 
-  <div id="globeViz"></div>
+  <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 
-</div>
-
-<div id="tooltip"></div>
-
-<script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
-
-<script>
-const MARKET_COLORS = {
-  "Amazon": "#FFB000",
-  "eBay": "#86B817",
-  "Walmart": "#00A6FB",
-  "Etsy": "#FF8C42",
-  "Lazada": "#7B61FF",
-  "Mercado Libre": "#FFD60A",
-  "Alibaba": "#FF7A00"
-};
-
-/* keep your existing marketplaces array here */
-
-const globeEl = document.getElementById('globeViz');
-const tooltip = document.getElementById('tooltip');
-const marketFilter = document.getElementById('marketFilter');
-
-function pointColor(d) {
-  return MARKET_COLORS[d.group] || '#ff6b3d';
-}
-
-function getFilteredData() {
-  const selected = marketFilter.value;
-  return selected === 'all'
-    ? marketplaces
-    : marketplaces.filter(item => item.group === selected);
-}
-
-function getDisplayData() {
-  const filtered = getFilteredData();
-  const counts = new Map();
-
-  return filtered.map(item => {
-    const key = `${item.lat},${item.lng}`;
-    const index = counts.get(key) || 0;
-    counts.set(key, index + 1);
-
-    if (index === 0) return item;
-
-    const angle = index * 0.9;
-    const distance = 0.9 + (index * 0.18);
-
-    return {
-      ...item,
-      lat: item.lat + Math.sin(angle) * distance,
-      lng: item.lng + Math.cos(angle) * distance
+  <script>
+    const MARKET_COLORS = {
+      "Alibaba": "#FF7A00",
+      "Aliexpress": "#FF3B3B",
+      "Allegro": "#FF6A00",
+      "Amazon": "#FFB000",
+      "Americanas": "#FF4D6D",
+      "Best Buy": "#00C2FF",
+      "Bol": "#3A86FF",
+      "DHGate": "#00D1B2",
+      "eBay": "#86B817",
+      "Etsy": "#FF8C42",
+      "Lazada": "#7B61FF",
+      "Made-in-China": "#9AA0A6",
+      "Mercado Libre": "#FFD60A",
+      "NewEgg": "#FF7F50",
+      "Tokopedia": "#00C853",
+      "Walmart": "#00A6FB",
+      "Wish": "#9D4EDD"
     };
-  });
-}
 
-const globe = new Globe(globeEl)
-  .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
-  .bumpImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png')
-  .backgroundColor('rgba(0,0,0,0)')
-  .pointsData(getDisplayData())
-  .pointLat('lat')
-  .pointLng('lng')
-  .pointAltitude(0.03)
-  .pointRadius(0.36)
-  .pointColor(pointColor)
-  .pointLabel(() => '')
-  .onPointHover(point => {
-    if (point) {
-      tooltip.style.display = 'block';
-      tooltip.textContent = point.name;
-    } else {
-      tooltip.style.display = 'none';
+    const marketplaces = [
+      { name: "Alibaba", group: "Alibaba", lat: 30.2741, lng: 120.1551 },
+      { name: "Aliexpress", group: "Aliexpress", lat: 30.2741, lng: 120.1551 },
+      { name: "Allegro", group: "Allegro", lat: 52.2297, lng: 21.0122 },
+
+      { name: "Amazon AE", group: "Amazon", lat: 25.2048, lng: 55.2708 },
+      { name: "Amazon AU", group: "Amazon", lat: -33.8688, lng: 151.2093 },
+      { name: "Amazon BE", group: "Amazon", lat: 50.8503, lng: 4.3517 },
+      { name: "Amazon BR", group: "Amazon", lat: -23.5505, lng: -46.6333 },
+      { name: "Amazon CA", group: "Amazon", lat: 43.6532, lng: -79.3832 },
+      { name: "Amazon DE", group: "Amazon", lat: 52.5200, lng: 13.4050 },
+      { name: "Amazon EG", group: "Amazon", lat: 30.0444, lng: 31.2357 },
+      { name: "Amazon ES", group: "Amazon", lat: 40.4168, lng: -3.7038 },
+      { name: "Amazon FR", group: "Amazon", lat: 48.8566, lng: 2.3522 },
+      { name: "Amazon IE", group: "Amazon", lat: 53.3498, lng: -6.2603 },
+      { name: "Amazon IN", group: "Amazon", lat: 19.0760, lng: 72.8777 },
+      { name: "Amazon IT", group: "Amazon", lat: 41.9028, lng: 12.4964 },
+      { name: "Amazon JP", group: "Amazon", lat: 35.6762, lng: 139.6503 },
+      { name: "Amazon MX", group: "Amazon", lat: 19.4326, lng: -99.1332 },
+      { name: "Amazon NL", group: "Amazon", lat: 52.3676, lng: 4.9041 },
+      { name: "Amazon PL", group: "Amazon", lat: 52.2297, lng: 21.0122 },
+      { name: "Amazon SA", group: "Amazon", lat: 24.7136, lng: 46.6753 },
+      { name: "Amazon SE", group: "Amazon", lat: 59.3293, lng: 18.0686 },
+      { name: "Amazon SG", group: "Amazon", lat: 1.3521, lng: 103.8198 },
+      { name: "Amazon TR", group: "Amazon", lat: 41.0082, lng: 28.9784 },
+      { name: "Amazon UK", group: "Amazon", lat: 51.5074, lng: -0.1278 },
+      { name: "Amazon US", group: "Amazon", lat: 39.8283, lng: -98.5795 },
+      { name: "Amazon ZA", group: "Amazon", lat: -26.2041, lng: 28.0473 },
+
+      { name: "Americanas", group: "Americanas", lat: -22.9068, lng: -43.1729 },
+
+      { name: "Best Buy CA", group: "Best Buy", lat: 43.6532, lng: -79.3832 },
+      { name: "Best Buy US", group: "Best Buy", lat: 44.9778, lng: -93.2650 },
+
+      { name: "Bol", group: "Bol", lat: 52.3676, lng: 4.9041 },
+      { name: "DHGate", group: "DHGate", lat: 39.9042, lng: 116.4074 },
+
+      { name: "eBay AT", group: "eBay", lat: 48.2082, lng: 16.3738 },
+      { name: "eBay AU", group: "eBay", lat: -33.8688, lng: 151.2093 },
+      { name: "eBay BE", group: "eBay", lat: 50.8503, lng: 4.3517 },
+      { name: "eBay CA", group: "eBay", lat: 43.6532, lng: -79.3832 },
+      { name: "eBay CH", group: "eBay", lat: 47.3769, lng: 8.5417 },
+      { name: "eBay DE", group: "eBay", lat: 52.5200, lng: 13.4050 },
+      { name: "eBay ES", group: "eBay", lat: 40.4168, lng: -3.7038 },
+      { name: "eBay FR", group: "eBay", lat: 48.8566, lng: 2.3522 },
+      { name: "eBay HK", group: "eBay", lat: 22.3193, lng: 114.1694 },
+      { name: "eBay IE", group: "eBay", lat: 53.3498, lng: -6.2603 },
+      { name: "eBay IT", group: "eBay", lat: 41.9028, lng: 12.4964 },
+      { name: "eBay MY", group: "eBay", lat: 3.1390, lng: 101.6869 },
+      { name: "eBay NL", group: "eBay", lat: 52.3676, lng: 4.9041 },
+      { name: "eBay PH", group: "eBay", lat: 14.5995, lng: 120.9842 },
+      { name: "eBay PL", group: "eBay", lat: 52.2297, lng: 21.0122 },
+      { name: "eBay SG", group: "eBay", lat: 1.3521, lng: 103.8198 },
+      { name: "eBay UK", group: "eBay", lat: 51.5074, lng: -0.1278 },
+      { name: "eBay US", group: "eBay", lat: 37.7749, lng: -122.4194 },
+
+      { name: "Etsy", group: "Etsy", lat: 40.7128, lng: -74.0060 },
+
+      { name: "Lazada ID", group: "Lazada", lat: -6.2088, lng: 106.8456 },
+      { name: "Lazada MY", group: "Lazada", lat: 3.1390, lng: 101.6869 },
+      { name: "Lazada PH", group: "Lazada", lat: 14.5995, lng: 120.9842 },
+      { name: "Lazada SG", group: "Lazada", lat: 1.3521, lng: 103.8198 },
+      { name: "Lazada TH", group: "Lazada", lat: 13.7563, lng: 100.5018 },
+      { name: "Lazada VN", group: "Lazada", lat: 10.8231, lng: 106.6297 },
+
+      { name: "Made-in-China", group: "Made-in-China", lat: 31.2304, lng: 121.4737 },
+
+      { name: "Mercado Libre AR", group: "Mercado Libre", lat: -34.6037, lng: -58.3816 },
+      { name: "Mercado Libre BR", group: "Mercado Libre", lat: -23.5505, lng: -46.6333 },
+      { name: "Mercado Libre CL", group: "Mercado Libre", lat: -33.4489, lng: -70.6693 },
+      { name: "Mercado Libre CO", group: "Mercado Libre", lat: 4.7110, lng: -74.0721 },
+      { name: "Mercado Libre CR", group: "Mercado Libre", lat: 9.9281, lng: -84.0907 },
+      { name: "Mercado Libre DO", group: "Mercado Libre", lat: 18.4861, lng: -69.9312 },
+      { name: "Mercado Libre EC", group: "Mercado Libre", lat: -0.1807, lng: -78.4678 },
+      { name: "Mercado Libre MX", group: "Mercado Libre", lat: 19.4326, lng: -99.1332 },
+      { name: "Mercado Libre PE", group: "Mercado Libre", lat: -12.0464, lng: -77.0428 },
+      { name: "Mercado Libre UY", group: "Mercado Libre", lat: -34.9011, lng: -56.1645 },
+      { name: "Mercado Libre VE", group: "Mercado Libre", lat: 10.4806, lng: -66.9036 },
+
+      { name: "NewEgg CA", group: "NewEgg", lat: 43.6532, lng: -79.3832 },
+      { name: "NewEgg US", group: "NewEgg", lat: 34.0522, lng: -118.2437 },
+
+      { name: "Tokopedia", group: "Tokopedia", lat: -6.2088, lng: 106.8456 },
+
+      { name: "Walmart CA", group: "Walmart", lat: 43.6532, lng: -79.3832 },
+      { name: "Walmart MX", group: "Walmart", lat: 19.4326, lng: -99.1332 },
+      { name: "Walmart US", group: "Walmart", lat: 36.3729, lng: -94.2088 },
+
+      { name: "Wish US", group: "Wish", lat: 37.7749, lng: -122.4194 }
+    ];
+
+    const globeEl = document.getElementById('globeViz');
+    const tooltip = document.getElementById('tooltip');
+    const errorBox = document.getElementById('errorBox');
+    const marketFilter = document.getElementById('marketFilter');
+
+    function showError(msg) {
+      errorBox.textContent = msg;
+      errorBox.style.display = 'block';
+      console.error(msg);
     }
-  });
 
-const controls = globe.controls();
-controls.autoRotate = true;
-controls.autoRotateSpeed = -0.35;
+    function pointColor(d) {
+      return MARKET_COLORS[d.group] || '#ff6b3d';
+    }
 
-globeEl.addEventListener('mousemove', e => {
-  tooltip.style.left = e.clientX + 'px';
-  tooltip.style.top = e.clientY + 'px';
-});
+    function getFilteredData() {
+      const selected = marketFilter.value;
+      return selected === 'all'
+        ? marketplaces
+        : marketplaces.filter(item => item.group === selected);
+    }
 
-globeEl.addEventListener('mouseenter', () => {
-  controls.autoRotate = false;
-});
+    function getDisplayData() {
+      const filtered = getFilteredData();
+      const counts = new Map();
 
-globeEl.addEventListener('mouseleave', () => {
-  tooltip.style.display = 'none';
-  controls.autoRotate = true;
-});
+      return filtered.map(item => {
+        const key = `${item.lat},${item.lng}`;
+        const index = counts.get(key) || 0;
+        counts.set(key, index + 1);
 
-marketFilter.addEventListener('change', () => {
-  const filtered = getDisplayData();
-  globe.pointsData(filtered);
-});
-</script>
+        if (index === 0) return item;
 
+        const angle = index * 0.9;
+        const distance = 0.9 + (index * 0.18);
+
+        return {
+          ...item,
+          lat: item.lat + Math.sin(angle) * distance,
+          lng: item.lng + Math.cos(angle) * distance
+        };
+      });
+    }
+
+    function hexToRgb(hex) {
+      const clean = hex.replace('#', '');
+      const bigint = parseInt(clean, 16);
+      return {
+        r: (bigint >> 16) & 255,
+        g: (bigint >> 8) & 255,
+        b: bigint & 255
+      };
+    }
+
+    function startGlobe() {
+      if (typeof Globe !== 'function') {
+        showError('The globe library did not load.');
+        return;
+      }
+
+      const globe = new Globe(globeEl)
+        .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
+        .bumpImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png')
+        .backgroundColor('rgba(0,0,0,0)')
+        .showAtmosphere(true)
+        .atmosphereColor('#79c8ff')
+        .atmosphereAltitude(0.16)
+        .pointsData(getDisplayData())
+        .pointLat('lat')
+        .pointLng('lng')
+        .pointAltitude(0.03)
+        .pointRadius(0.36)
+        .pointColor(pointColor)
+        .pointResolution(18)
+        .pointLabel(() => '')
+        .onPointHover(point => {
+          if (point) {
+            tooltip.style.display = 'block';
+            tooltip.textContent = point.name;
+          } else {
+            tooltip.style.display = 'none';
+          }
+        });
+
+      globe.pointOfView({ lat: 18, lng: 10, altitude: 2.05 }, 0);
+
+      const controls = globe.controls();
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = -0.35;
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.enablePan = false;
+
+      globeEl.addEventListener('mousemove', e => {
+        tooltip.style.left = e.clientX + 'px';
+        tooltip.style.top = e.clientY + 'px';
+      });
+
+      globeEl.addEventListener('mouseenter', () => {
+        controls.autoRotate = false;
+      });
+
+      globeEl.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
+        controls.autoRotate = true;
+      });
+
+      marketFilter.addEventListener('change', () => {
+        const filtered = getDisplayData();
+        globe.pointsData(filtered);
+        globe.ringsData(filtered);
+      });
+
+      function resize() {
+        const isMobile = window.innerWidth <= 768;
+        globe.width(window.innerWidth);
+        globe.height(isMobile ? Math.max(globeEl.clientHeight, 500) : window.innerHeight);
+      }
+
+      resize();
+      window.addEventListener('resize', resize);
+
+      globe
+        .ringsData(getDisplayData())
+        .ringLat('lat')
+        .ringLng('lng')
+        .ringColor(d => t => {
+          const color = MARKET_COLORS[d.group] || '#ff6b3d';
+          const rgb = hexToRgb(color);
+          return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${1 - t})`;
+        })
+        .ringMaxRadius(2.2)
+        .ringPropagationSpeed(0.7)
+        .ringRepeatPeriod(2200);
+    }
+
+    window.addEventListener('load', startGlobe);
+  </script>
 </body>
 </html>
