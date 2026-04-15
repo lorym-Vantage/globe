@@ -99,23 +99,23 @@
 
   <script>
     const MARKET_COLORS = {
-      "Alibaba": "#FF6A00",
-      "Aliexpress": "#FF3131",
-      "Allegro": "#FF5A00",
-      "Amazon": "#FF9900",
-      "Americanas": "#E41E3F",
-      "Best Buy": "#1E90FF",
-      "Bol": "#007BFF",
-      "DHGate": "#00B894",
-      "eBay": "#0064D2",
-      "Etsy": "#F1641E",
-      "Lazada": "#6C5CE7",
-      "Made-in-China": "#7F8C8D",
-      "Mercado Libre": "#FFD400",
-      "NewEgg": "#FF6F3C",
-      "Tokopedia": "#00AA5B",
-      "Walmart": "#0071CE",
-      "Wish": "#7D3CFF"
+      "Alibaba": "#FF7A00",
+      "Aliexpress": "#FF3B3B",
+      "Allegro": "#FF6A00",
+      "Amazon": "#FFB000",
+      "Americanas": "#FF4D6D",
+      "Best Buy": "#00C2FF",
+      "Bol": "#3A86FF",
+      "DHGate": "#00D1B2",
+      "eBay": "#4C6FFF",
+      "Etsy": "#FF8C42",
+      "Lazada": "#7B61FF",
+      "Made-in-China": "#9AA0A6",
+      "Mercado Libre": "#FFD60A",
+      "NewEgg": "#FF7F50",
+      "Tokopedia": "#00C853",
+      "Walmart": "#00A6FB",
+      "Wish": "#9D4EDD"
     };
 
     const marketplaces = [
@@ -303,9 +303,9 @@ const globe = new Globe(globeEl)
         .ringLat('lat')
         .ringLng('lng')
         .ringColor(d => t => {
-          const hex = pointColor(d);
-          const rgb = hexToRgb(hex);
-          return `rgba(${rgb.r},${rgb.g},${rgb.b},${1 - t})`;
+          const color = MARKET_COLORS[d.group] || '#ff6b3d';
+          const rgb = hexToRgb(color);
+          return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${1 - t})`;
         })
         .ringMaxRadius(3.2)
         .ringPropagationSpeed(0.7)
