@@ -9,23 +9,24 @@
       margin: 0;
       width: 100%;
       height: 100%;
-      background: #050b16;
-      font-family: Arial, sans-serif;
       overflow: hidden;
+      background: #040b16;
+      font-family: Arial, sans-serif;
     }
 
     #globeViz {
-      width: 100vw;
-      height: 100vh;
-      background: radial-gradient(circle at 50% 50%, #0b1830 0%, #050b16 100%);
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, #0d1d38 0%, #040b16 100%);
     }
 
-    .tooltip {
+    #tooltip {
       position: fixed;
+      display: none;
       z-index: 9999;
       pointer-events: none;
-      background: rgba(10, 14, 24, 0.92);
-      color: #fff;
+      background: rgba(7, 11, 20, 0.92);
+      color: white;
       padding: 8px 10px;
       border-radius: 8px;
       font-size: 13px;
@@ -33,25 +34,24 @@
       white-space: nowrap;
       box-shadow: 0 8px 24px rgba(0,0,0,0.35);
       transform: translate(12px, -50%);
-      display: none;
     }
 
-    .legend {
+    #legend {
       position: fixed;
       left: 16px;
       bottom: 16px;
       z-index: 20;
-      color: rgba(255,255,255,0.88);
-      background: rgba(6, 10, 18, 0.55);
+      color: rgba(255,255,255,0.9);
+      background: rgba(6, 10, 18, 0.58);
       backdrop-filter: blur(8px);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 12px;
       padding: 12px 14px;
       font-size: 13px;
-      max-width: 260px;
+      max-width: 280px;
     }
 
-    .legend strong {
+    #legend strong {
       display: block;
       margin-bottom: 6px;
       font-size: 14px;
@@ -62,29 +62,28 @@
       top: 16px;
       right: 16px;
       z-index: 50;
-      max-width: 360px;
-      background: rgba(120, 20, 20, 0.95);
+      display: none;
+      max-width: 380px;
+      background: rgba(130, 24, 24, 0.96);
       color: white;
       padding: 12px 14px;
       border-radius: 10px;
       font-size: 13px;
       line-height: 1.4;
-      display: none;
       box-shadow: 0 8px 24px rgba(0,0,0,0.35);
     }
   </style>
 </head>
 <body>
   <div id="globeViz"></div>
-  <div id="tooltip" class="tooltip"></div>
+  <div id="tooltip"></div>
   <div id="errorBox"></div>
 
-  <div class="legend">
+  <div id="legend">
     <strong>Marketplace Coverage</strong>
     Hover a pin to view marketplace names. The globe rotates automatically and pauses while hovered.
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/globe.gl"></script>
 
   <script>
@@ -179,8 +178,8 @@
       { name: "Wish US", lat: 37.7749, lng: -122.4194 }
     ];
 
-    const tooltip = document.getElementById('tooltip');
     const globeEl = document.getElementById('globeViz');
+    const tooltip = document.getElementById('tooltip');
     const errorBox = document.getElementById('errorBox');
 
     function showError(msg) {
@@ -189,84 +188,77 @@
       console.error(msg);
     }
 
-    window.addEventListener('load', function () {
-      if (!window.THREE) {
-        showError('Three.js failed to load.');
+    function startGlobe() {
+      if (typeof Globe !== 'function') {
+        showError('The globe library did not load.');
         return;
       }
 
-      if (!window.Globe) {
-        showError('globe.gl failed to load.');
-        return;
-      }
+      const globe = new Globe(globeEl)
+        .globeImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
+        .bumpImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png')
+        .backgroundImageUrl('//cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
+        .showAtmosphere(true)
+        .atmosphereColor('#79c8ff')
+        .atmosphereAltitude(0.16)
+        .pointsData(marketplaces)
+        .pointLat('lat')
+        .pointLng('lng')
+        .pointAltitude(0.03)
+        .pointRadius(0.36)
+        .pointColor(() => '#ff6b3d')
+        .pointResolution(18)
+        .onPointHover(point => {
+          if (point) {
+            tooltip.style.display = 'block';
+            tooltip.textContent = point.name;
+          } else {
+            tooltip.style.display = 'none';
+          }
+        });
 
-      try {
-        const globe = Globe()(globeEl)
-          .globeImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-blue-marble.jpg')
-          .bumpImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-topology.png')
-          .backgroundImageUrl('https://cdn.jsdelivr.net/npm/three-globe/example/img/night-sky.png')
-          .showAtmosphere(true)
-          .atmosphereColor('#7cc7ff')
-          .atmosphereAltitude(0.18)
-          .pointsData(marketplaces)
-          .pointLat(d => d.lat)
-          .pointLng(d => d.lng)
-          .pointAltitude(0.03)
-          .pointRadius(0.38)
-          .pointColor(() => '#ff6b3d')
-          .pointResolution(18)
-          .onPointHover(point => {
-            if (point) {
-              tooltip.style.display = 'block';
-              tooltip.textContent = point.name;
-            } else {
-              tooltip.style.display = 'none';
-            }
-          });
+      globe.pointOfView({ lat: 18, lng: 10, altitude: 2.05 }, 0);
 
-        globe.pointOfView({ lat: 18, lng: 10, altitude: 2.05 }, 0);
+      const controls = globe.controls();
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.35;
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      controls.enablePan = false;
 
-        const controls = globe.controls();
+      globeEl.addEventListener('mousemove', e => {
+        tooltip.style.left = e.clientX + 'px';
+        tooltip.style.top = e.clientY + 'px';
+      });
+
+      globeEl.addEventListener('mouseenter', () => {
+        controls.autoRotate = false;
+      });
+
+      globeEl.addEventListener('mouseleave', () => {
+        tooltip.style.display = 'none';
         controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.35;
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.08;
-        controls.enablePan = false;
+      });
 
-        globeEl.addEventListener('mousemove', e => {
-          tooltip.style.left = e.clientX + 'px';
-          tooltip.style.top = e.clientY + 'px';
-        });
-
-        globeEl.addEventListener('mouseenter', () => {
-          controls.autoRotate = false;
-        });
-
-        globeEl.addEventListener('mouseleave', () => {
-          tooltip.style.display = 'none';
-          controls.autoRotate = true;
-        });
-
-        function resizeGlobe() {
-          globe.width(window.innerWidth);
-          globe.height(window.innerHeight);
-        }
-
-        resizeGlobe();
-        window.addEventListener('resize', resizeGlobe);
-
-        globe
-          .ringsData(marketplaces)
-          .ringLat(d => d.lat)
-          .ringLng(d => d.lng)
-          .ringColor(() => t => `rgba(255,107,61,${1 - t})`)
-          .ringMaxRadius(3.2)
-          .ringPropagationSpeed(0.7)
-          .ringRepeatPeriod(1800);
-      } catch (err) {
-        showError('Globe initialization failed: ' + err.message);
+      function resize() {
+        globe.width(window.innerWidth);
+        globe.height(window.innerHeight);
       }
-    });
+
+      resize();
+      window.addEventListener('resize', resize);
+
+      globe
+        .ringsData(marketplaces)
+        .ringLat('lat')
+        .ringLng('lng')
+        .ringColor(() => t => `rgba(255,107,61,${1 - t})`)
+        .ringMaxRadius(3.2)
+        .ringPropagationSpeed(0.7)
+        .ringRepeatPeriod(1800);
+    }
+
+    window.addEventListener('load', startGlobe);
   </script>
 </body>
 </html>
